@@ -1,0 +1,8 @@
+# Environment folder
+env/
+
+# PyCharm settings folder
+.idea/
+
+# Python cache
+__pycache__
