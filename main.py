@@ -293,7 +293,7 @@ def main():
 
     st.sidebar.title( "Irish virus" )
     selected_date = st.sidebar.selectbox( "Select date: ",
-                                          list( data.keys() ),
+                                          sorted( data.keys(), reverse=True ),
                                           format_func=lambda x: datetime.strptime( x, Constants.DATE_FORMAT_SHORT )
                                                                         .strftime( Constants.DATE_FORMAT_NICE ) )
     show_raw_data = st.sidebar.checkbox( "Show raw data" )
@@ -301,6 +301,8 @@ def main():
     st.sidebar.markdown( "Data source: {}".format( Constants.DATA_SOURCE ) )
 
     # Showing the evolution through time
+    st.markdown( "## Currently infected: {}".format( sum( [ el.number for el in data[ max( data.keys() ) ]
+                                                            if "county" in el.info_type ] ) ) )
     st.markdown( "## Evolution" )
     selected_counties = st.multiselect( "Select counties: ",
                                         sorted( Constants.COUNTY_SETTINGS.keys() ) )
@@ -332,7 +334,7 @@ def main():
     for info in set( [ el.info_type for el in data[ selected_date ] if "county" not in el.info_type ] ):
         selected_data = [ el for el in data[ selected_date ] if el.info_type == info ]
 
-        if "age" in info.lower():
+        if "age" in info.lower() or "cluster" in info.lower():
             st.plotly_chart( plot_bar_chart( { el.description: el.number for el in selected_data
                                                if "Total" not in el.description },
                                              title=info ) )
