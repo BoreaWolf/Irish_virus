@@ -225,8 +225,9 @@ def plot_line_chart( data: Dict[ str, Dict[ str, float ] ],
 
     fig = go.Figure()
     for county in data.keys():
-        fig.add_trace( go.Scatter( x=list( data[ county ].keys() ),
-                                   y=list( data[ county ].values() ),
+        x_axis = sorted( data[ county ].keys() )
+        fig.add_trace( go.Scatter( x=x_axis,
+                                   y=[ data[ county ][ x ] for x in x_axis ],
                                    mode="lines+markers",
                                    name=county ) )
 
