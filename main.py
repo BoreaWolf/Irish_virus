@@ -357,6 +357,10 @@ def main():
                                            "Number": [ el.number for el in selected_data ],
                                            "Rate": [ "{:.3f}%".format( el.rate ) for el in selected_data ] },
                                          info ) )
+    
+    st.sidebar.markdown( "Reference: [GitHub Project]({})".format( Constants.GITHUB_REPO ) )
+    #   st.sidebar.markdown( "[![GitHub Project]({})]({})".format( Constants.GITHUB_LOGO,
+    #                                                              Constants.GITHUB_REPO ) )
 
 
 if __name__ == "__main__":
