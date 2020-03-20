@@ -240,6 +240,39 @@ def plot_line_chart( data: Dict[ str, Dict[ str, float ] ],
 
     return fig
 
+@st.cache
+def load_file( file_name: str ) -> List[ Information ]:
+    """ Loading file and caching it to avoid repetitive actions
+
+    :param file_name: File name to read
+    :type file_name: str
+    :return: The information read from the given file
+    :rtype: List[ Information ]
+    """
+
+    with open( file_name, "r" ) as input_file:
+        file_content = bs4.BeautifulSoup( input_file, features="html.parser" )
+
+    result = [ ]
+
+    for parsed_table, table_title in zip( [ parse_html_table( t ) for t in file_content.find_all( "table" ) ],
+                                          [ clean_table_title( t ) for t in file_content.find_all( "h2" ) ] ):
+
+        for row in parsed_table[ "data" ]:
+            # Extending the row if needed
+            row.extend( [ "" ] * ( 3 - len( row ) ) )
+            result.append( Information( row[ 0 ],
+                                        row[ 1 ],
+                                        row[ 2 ],
+                                        table_title ) )
+
+    # Calculating the rates for the counties since they are not provided
+    number_cases = sum( [ el.number for el in result if "county" in el.info_type ] )
+    for county in [ el for el in result if "county" in el.info_type ]:
+        county.rate = county.number / number_cases * 100
+
+    return result
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ MAIN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 def main():
@@ -255,38 +288,7 @@ def main():
     data = { }
     # Read all data from files
     for file_name in glob.glob( "{}/*{}".format( Constants.DIR_DATA, Constants.EXT_HTML ) ):
-        with open( file_name, "r" ) as input_file:
-            file_content = bs4.BeautifulSoup( input_file, features="html.parser" )
-
-        current_date = os.path.basename( file_name ).replace( Constants.EXT_HTML, "" )
-        data[ current_date ] = [ ]
-
-        for parsed_table, table_title in zip( [ parse_html_table( t ) for t in file_content.find_all( "table" ) ],
-                                              [ clean_table_title( t ) for t in file_content.find_all( "h2" ) ] ):
-            #   if parsed_table[ "cols" ]:
-            #       info_type = parsed_table[ "cols" ][ 0 ][ 0 ]
-            #   else:
-            #       # Differentiating by the different type of information based on the content of the table
-            #       if "travel" in parsed_table[ "data" ][ 0 ][ 0 ].lower():
-            #           info_type = "Healthcare workers"
-            #       elif "male" in parsed_table[ "data" ][ 0 ][ 0 ].lower():
-            #           info_type = "Gender"
-            #       else:
-            #           info_type = "Unknown"
-
-            for row in parsed_table[ "data" ]:
-                # Extending the row if needed
-                row.extend( [ "" ] * ( 3 - len( row ) ) )
-                data[ current_date ].append( Information( row[ 0 ],
-                                                          row[ 1 ],
-                                                          row[ 2 ],
-                                                          table_title ) )
-                                                          # info_type ) )
-
-        # Calculating the rates for the counties since they are not provided
-        number_cases = sum( [ el.number for el in data[ current_date ] if "county" in el.info_type ] )
-        for county in [ el for el in data[ current_date ] if "county" in el.info_type ]:
-            county.rate = county.number / number_cases * 100
+        data[ os.path.basename( file_name ).replace( Constants.EXT_HTML, "" ) ] = load_file( file_name )
 
     st.sidebar.title( "Irish virus" )
     selected_date = st.sidebar.selectbox( "Select date: ",
