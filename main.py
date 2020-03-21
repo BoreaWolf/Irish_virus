@@ -42,6 +42,8 @@ class Information:
         self.description = description
         try:
             self.number = int( re.findall( r"([0-9.,]+)", number )[ 0 ] )
+        except ValueError:
+            self.number = int( float( re.findall( r"([0-9.,]+)", number )[ 0 ] ) )
         except IndexError:
             self.number = 0
         try:
@@ -163,11 +165,14 @@ def plot_bar_chart( data: Dict[ str, float ],
     """
 
     fig = go.Figure()
-    fig.add_trace( go.Bar( x=list( data.keys() ),
-                           y=list( data.values() ),
-                           text=list( data.values() ),
-                           textposition="auto",
-                           name="Sbra" ) )
+    if list( Constants.COUNTY_SETTINGS.keys() )[ 0 ] in data.keys():
+        x_axis = sorted( data.keys() )
+    else:
+        x_axis = list( data.keys() )
+    fig.add_trace( go.Bar( x=x_axis,
+                           y=[ data[ x ] for x in x_axis ],
+                           text=[ data[ x ] for x in x_axis ],
+                           textposition="auto" ) )
 
     layout = { "showlegend": legend,
                "width": Constants.GRAPH_SIZE[ 0 ],
@@ -302,25 +307,25 @@ def main():
 
     # Showing the evolution through time
     st.markdown( "## Currently infected: {}".format( sum( [ el.number for el in data[ max( data.keys() ) ]
-                                                            if "county" in el.info_type ] ) ) )
+                                                            if "county" in el.info_type.lower() ] ) ) )
     st.markdown( "## Evolution" )
     selected_counties = st.multiselect( "Select counties: ",
                                         sorted( Constants.COUNTY_SETTINGS.keys() ) )
 
-    if not selected_counties:
-        evolution_data = { "Total": { d: sum( [ el.number for el in data[ d ] if "county" in el.info_type ] )
-                                      for d in data.keys() } }
-    else:
-        evolution_data = { c: { d: [ el.number for el in data[ d ]
-                                     if "county" in el.info_type and el.description == c ][ 0 ]
+
+    # Creating the evolution data to show including the total of all counties
+    evolution_data = { "Total": { d: sum( [ el.number for el in data[ d ] if "county" in el.info_type.lower() ] )
+                                  for d in data.keys() },
+                       **{ c: { d: [ el.number for el in data[ d ]
+                                     if "county" in el.info_type.lower() and el.description == c ][ 0 ]
                                 for d in data.keys() }
-                           for c in selected_counties }
+                           for c in selected_counties } }
 
     st.plotly_chart( plot_line_chart( evolution_data,
                                       legend=True ) )
 
     # Showing a map of Ireland with the corresponding values per county
-    selected_data = [ el for el in data[ selected_date ] if "county" in el.info_type ]
+    selected_data = [ el for el in data[ selected_date ] if "county" in el.info_type.lower() ]
     st.markdown( "## {}".format( datetime.strptime( selected_date,
                                                     Constants.DATE_FORMAT_SHORT )
                                  .strftime( Constants.DATE_FORMAT_NICE ) ) )
@@ -331,7 +336,7 @@ def main():
     st.plotly_chart( plot_bar_chart( { el.description: el.number for el in selected_data },
                                      title="County" ) )
 
-    for info in set( [ el.info_type for el in data[ selected_date ] if "county" not in el.info_type ] ):
+    for info in set( [ el.info_type for el in data[ selected_date ] if "county" not in el.info_type.lower() ] ):
         selected_data = [ el for el in data[ selected_date ] if el.info_type == info ]
 
         if "age" in info.lower() or "cluster" in info.lower():
@@ -339,7 +344,7 @@ def main():
                                                if "Total" not in el.description },
                                              title=info ) )
 
-        elif "statistics" in info.lower():
+        elif "statistics" in info.lower() or "analysis" in info.lower():
             st.markdown( markdown_table( { "Type": [ el.description for el in selected_data ],
                                            "Number": [ el.number for el in selected_data ],
                                            "Rate": [ "{:.3f}%".format( el.rate ) for el in selected_data ] },
