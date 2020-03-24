@@ -11,6 +11,10 @@ EXT_HTML = ".html"
 
 DATE_FORMAT_SHORT = "%Y_%m_%d"
 DATE_FORMAT_NICE = "%A %d %B %Y"
+REGEX_DATE_LINK = r"\([^0-9]*([0-9]+\s+[a-zA-Z]+\s+[0-9]+)\)"
+DATE_LINK_FORMAT = "%d %B %Y"
+DOWNLOAD_TIME_START = 18 
+DOWNLOAD_TIME_END = 21
 
 COUNTY_SETTINGS = { "Carlow":       { "pos": [ 500, 610 ], "color": "#D82894" },
                     "Cavan":        { "pos": [ 420, 310 ], "color": "#532DA9" },
@@ -40,6 +44,7 @@ GRAPH_SIZE = ( 800, 600 )
 MAP_PATCH_SIZE = ( 5, 150 )
 
 DATA_SOURCE = "https://www.gov.ie/en/news/7e0924-latest-updates-on-covid-19-coronavirus/"
+DATA_SOURCE_BASE = "/".join( DATA_SOURCE.split( "/" )[ :3 ] )
+DATA_SOURCE_LINKS = "https://www.gov.ie/en/collection/ef2560-analysis-of-confirmed-cases-of-covid-19-coronavirus-in-ireland/"
 GITHUB_REPO = "https://github.com/BoreaWolf/Irish_virus"
 GITHUB_LOGO = DIR_DATA + "/github_logo.png"
-GITHUB_TEST = "https://www.google.com/url?sa=i&url=https%3A%2F%2Ficon-icons.com%2Ficon%2FGithub%2F102542&psig=AOvVaw0N_tpsYF_bmsXybUNrNP4x&ust=1584803887556000&source=images&cd=vfe&ved=0CAIQjRxqFwoTCOCTstqsqegCFQAAAAAdAAAAABAJ"
