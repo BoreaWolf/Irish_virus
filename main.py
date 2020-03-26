@@ -247,18 +247,19 @@ def plot_line_chart( data: Dict[ str, Dict[ str, float ] ],
 
     return fig
 
-@st.cache
-def load_file( file_name: str ) -> List[ Information ]:
-    """ Loading file and caching it to avoid repetitive actions
 
-    :param file_name: File name to read
+@st.cache
+def load_url_data( url: str ) -> List[ Information ]:
+    """ Reading url and caching it to avoid repetitive actions
+
+    :param file_name: Url link
     :type file_name: str
-    :return: The information read from the given file
+    :return: The information read from the given url
     :rtype: List[ Information ]
     """
 
-    with open( file_name, "r" ) as input_file:
-        file_content = bs4.BeautifulSoup( input_file, features="html.parser" )
+    file_content = bs4.BeautifulSoup( requests.get( url ).content,
+                                      features="html.parser" )
 
     result = [ ]
 
@@ -292,38 +293,22 @@ def main():
     input_args = vars( arg_parser.parse_args() )
     # endregion
 
-    # The Irish government is too inconsistent in publishing the data so I keep
-    # uploading the data manually
-    #   # Checking for new data on the website only in a given datetime interval
-    #   date_range = [ datetime.today().replace( hour=Constants.DOWNLOAD_TIME_START, minute=0 ),
-    #                  datetime.today().replace( hour=Constants.DOWNLOAD_TIME_END, minute=0 ) ]
-    #   if date_range[ 0 ] <= datetime.now() <= date_range[ 1 ]:
-    #       links_content = bs4.BeautifulSoup( requests.get( Constants.DATA_SOURCE_LINKS ).content,
-    #                                          features="html.parser" )
-    #       links_content = [ [ datetime.strptime( re.findall( Constants.REGEX_DATE_LINK,
-    #                                                          el.text )[ 0 ],
-    #                                              Constants.DATE_LINK_FORMAT )
-    #                                   .strftime( Constants.DATE_FORMAT_SHORT ),
-    #                           el[ "href" ] ]
-    #                         for el in links_content.find_all( "a" )
-    #                         if "analysis" in el.text.lower() and "covid" in el.text.lower() ]
-
-    #       # Checking the current files and downloading the new files if needed
-    #       current_files = glob.glob( "{}/*{}".format( Constants.DIR_DATA, Constants.EXT_HTML ) )
-    #       for link_date, link in links_content:
-    #           if link_date not in "-".join( current_files ):
-    #               st.info( "Downloading data for '{}'".format( link_date ) )
-    #               with open( "{}/{}{}".format( Constants.DIR_DATA,
-    #                                            link_date,
-    #                                            Constants.EXT_HTML ), "w" ) as output_file:
-    #                   output_file.write( requests.get( "{}{}".format( Constants.DATA_SOURCE_BASE,
-    #                                                                   link ) ).text )
+    # Checking for new data on the website
+    links_content = bs4.BeautifulSoup( requests.get( Constants.DATA_SOURCE_LINKS ).content,
+                                       features="html.parser" )
+    links_content = [ [ datetime.strptime( re.findall( Constants.REGEX_DATE_LINK,
+                                                       el.text )[ 0 ],
+                                           Constants.DATE_LINK_FORMAT )
+                                .strftime( Constants.DATE_FORMAT_SHORT ),
+                        el[ "href" ] ]
+                      for el in links_content.find_all( "a" )
+                      if "analysis" in el.text.lower() and "covid" in el.text.lower() ]
 
     data = { }
-    # Read all data from files
-    for file_name in glob.glob( "{}/*{}".format( Constants.DIR_DATA, Constants.EXT_HTML ) ):
-        data[ os.path.basename( file_name ).replace( Constants.EXT_HTML, "" ) ] = load_file( file_name )
-
+    for link_info in links_content:
+        data[ link_info[ 0 ] ] = load_url_data( "{}{}".format( Constants.DATA_SOURCE_BASE,
+                                                               link_info[ 1 ] ) )
+    # Building the interface
     st.sidebar.title( "Irish virus" )
     selected_date = st.sidebar.selectbox( "Select date: ",
                                           sorted( data.keys(), reverse=True ),
