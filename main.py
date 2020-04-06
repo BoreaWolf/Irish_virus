@@ -44,7 +44,9 @@ class Information:
         try:
             self.number = int( re.findall( r"([0-9.,]+)", number )[ 0 ] )
         except ValueError:
-            self.number = int( float( re.findall( r"([0-9.,]+)", number )[ 0 ] ) )
+            value = re.findall( r"([0-9.,]+)", number )[ 0 ]
+            value = value.replace( ",", "" )
+            self.number = int( float( value ) )
         except IndexError:
             self.number = 0
         try:
@@ -263,8 +265,11 @@ def load_url_data( url: str ) -> List[ Information ]:
 
     result = [ ]
 
+    # Fix to avoid having some random title with the current date in the list of
+    # titles to analyse (i.e., 2 April)
     for parsed_table, table_title in zip( [ parse_html_table( t ) for t in file_content.find_all( "table" ) ],
-                                          [ clean_table_title( t ) for t in file_content.find_all( "h2" ) ] ):
+                                          [ clean_table_title( t ) for t in file_content.find_all( "h2" )
+                                            if "Cases on" not in t.text ] ):
 
         for row in parsed_table[ "data" ]:
             # Extending the row if needed
@@ -275,8 +280,8 @@ def load_url_data( url: str ) -> List[ Information ]:
                                         table_title ) )
 
     # Calculating the rates for the counties since they are not provided
-    number_cases = sum( [ el.number for el in result if "county" in el.info_type ] )
-    for county in [ el for el in result if "county" in el.info_type ]:
+    number_cases = sum( [ el.number for el in result if "county" in el.info_type.lower() ] )
+    for county in [ el for el in result if "county" in el.info_type.lower() ]:
         county.rate = county.number / number_cases * 100
 
     return result
